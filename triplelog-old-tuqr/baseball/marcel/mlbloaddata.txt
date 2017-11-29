@@ -1,0 +1,4 @@
+import sqlite3
+import urllib
+urllib.urlretrieve("https://raw.githubusercontent.com/rwilcox5/triplelog/master/sports/marcel/lahmandata.db", "lahmandata.db")
+connection = sqlite3.connect("lahmandata.db")

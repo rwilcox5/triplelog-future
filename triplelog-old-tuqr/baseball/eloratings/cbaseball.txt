@@ -1,0 +1,96 @@
+import sqlite3
+import csv
+import numpy
+import time
+import urllib
+#urllib.urlretrieve("http://www.elevatormath.com/wp/wp-content/uploads/collbaseball.db", "collbaseball.db")
+connection = sqlite3.connect("collbaseball.db")
+load("elo.spyx")
+
+def getteams(theresult):
+    teams = [[],[],[]]
+    for i in range(0,len(theresult)):
+        if theresult[i][2] in teams[0]:
+            for ii in range(0,len(teams[0])):
+                if theresult[i][2]==teams[0][ii]:
+                    teams[1][ii]=teams[1][ii]+1
+        else:
+            teams[0].append(theresult[i][2])
+            teams[1].append(1)
+            teams[2].append(1500)
+        if theresult[i][1] in teams[0]:
+            for ii in range(0,len(teams[0])):
+                if theresult[i][1]==teams[0][ii]:
+                    teams[1][ii]=teams[1][ii]+1
+        else:
+            teams[0].append(theresult[i][1])
+            teams[1].append(1)
+            teams[2].append(1500)
+    return teams
+def removeteams(theresult,teams):
+    newresult = []
+    allgood = 0
+    while allgood ==0:
+        allgood =1
+        for ii in range(0,len(teams[0])):
+            if teams[1][ii]<26:
+                teams[0].remove(teams[0][ii])
+                teams[1].remove(teams[1][ii])
+                teams[2].remove(teams[2][ii])
+                allgood=0
+                break
+    for i in range(0,len(theresult)):
+        gooda = 0
+        goodb = 0
+        if theresult[i][1] in teams[0]:
+            gooda = 1
+        if theresult[i][2] in teams[0]:
+            goodb = 1
+        if gooda+goodb==2:
+            newresult.append(theresult[i])
+    return newresult, teams
+
+
+addtodone = []
+def checkifdone(arr):
+    global addtodone
+    good = 0
+    for i in range(0,len(addtodone)):
+        if arr[0] == addtodone[i][0]:
+            if arr[1] == addtodone[i][1]:
+                sortteams = addtodone[i][2]
+                good = 1
+    if good == 1:
+        return sortteams
+    else:
+        return []
+result = connection.execute("select * from games")
+theresult = result.fetchall()
+teamsa = getteams(theresult)
+theresult, teamsa = removeteams(theresult,teamsa)
+maxteams = len(teamsa[0])
+@interact
+def f(k=slider(srange(1,50,1),default=10),teamrange=range_slider(srange(0,maxteams,1),default=(0,10)),spfactor=input_box('log(d)*100',type=str, label='Function for difference')):
+    global addtodone
+    global theresult
+    fx = lambda d: eval(spfactor)
+    sprarr = [0]
+    for i in range(1,100):
+        sprarr.append(fx(i+0.))
+    sortteams = checkifdone([k,spfactor])
+    if len(sortteams)>0:
+        T = table(sortteams[teamrange[0]:teamrange[1]], header_row= ['Team','ELO Rating'],frame=True)
+        print T
+    else:
+        teams = getteams(theresult)
+        print time.time()
+        for i in range(0,len(theresult)):
+            teams = updateelo(theresult[i][1],theresult[i][2],int(theresult[i][3]),int(theresult[i][4]),teams,k,sprarr)
+        print time.time()
+        allteams = []
+        for i in range(0,len(teams[2])):
+            allteams.append([teams[0][i],teams[2][i]])
+        sortteams = sorted(allteams, key=lambda allteams_entry: allteams_entry[1],reverse=True)
+        addtodone.append([k,spfactor,sortteams])
+        T = table(sortteams[teamrange[0]:teamrange[1]], header_row= ['Team','ELO Rating'],frame=True)
+        print T

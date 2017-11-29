@@ -1,0 +1,4 @@
+import sqlite3
+import urllib
+urllib.urlretrieve("http://www.elevatormath.com/wp/wp-content/uploads/collbaseball.db", "collbaseball.db")
+connection = sqlite3.connect("collbaseball.db")

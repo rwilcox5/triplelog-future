@@ -1,0 +1,193 @@
+import sqlite3
+import csv
+import time
+import numpy
+from sage.plot.scatter_plot import ScatterPlot
+print time.time()
+connection = sqlite3.connect("lahmandata.db")
+def writecsv(listarr):
+    with open('eggs.csv', 'w') as csvfile:
+        spamwriter = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+        for i in range(0,len(listarr)):
+            spamwriter.writerow(listarr[i])
+def getstat(batterid,years, stat, year):
+    yearstr = "("
+    for i in range(0,len(years)-1):
+        yearstr=yearstr+str(years[i])+","
+    yearstr=yearstr+str(years[len(years)-1])+")"
+    if stat == 'hr':
+        poststr = "SELECT ab,bb,hbp,sh,sf, year, hr, yob FROM battertemp where id='"+batterid+"' and year in "+yearstr
+    if stat == '2b':
+        poststr = "SELECT ab,bb,hbp,sh,sf, year, doubles, yob FROM battertemp where id='"+batterid+"' and year in "+yearstr
+    if stat == 'hits':
+        poststr = "SELECT ab,bb,hbp,sh,sf, year, hits, yob FROM battertemp where id='"+batterid+"' and year in "+yearstr
+    if stat == '3b':
+        poststr = "SELECT ab,bb,hbp,sh,sf, year, triples, yob FROM battertemp where id='"+batterid+"' and year in "+yearstr
+    if stat == 'rbi':
+        poststr = "SELECT ab,bb,hbp,sh,sf, year, rbi, yob FROM battertemp where id='"+batterid+"' and year in "+yearstr
+    if stat == 'bb':
+        poststr = "SELECT ab,bb,hbp,sh,sf, year, bb, yob FROM battertemp where id='"+batterid+"' and year in "+yearstr
+    result = connection.execute(poststr)
+    theres = result.fetchall()
+    if len(theres)> 0:
+        npa1 = 0
+        npa2 = 0
+        npa3 = 0
+        nhr1 = 0
+        nhr2 = 0
+        nhr3 = 0
+        for i in range(0,len(theres)):
+            if theres[i][5]==years[0]:
+                npa1=npa1+theres[i][1]+theres[i][2]+theres[i][3]+theres[i][4]+theres[i][0]
+                nhr1 = nhr1 +theres[i][6]
+            if theres[i][5]==years[1]:
+                npa2=npa2+theres[i][1]+theres[i][2]+theres[i][3]+theres[i][4]+theres[i][0]
+                nhr2 = nhr2 +theres[i][6]
+            if theres[i][5]==years[2]:
+                npa3=npa3+theres[i][1]+theres[i][2]+theres[i][3]+theres[i][4]+theres[i][0]
+                nhr3 = nhr3 +theres[i][6]
+            age = year - theres[i][7]
+    else:
+        npa1 = 0
+        npa2 = 0
+        npa3 = 0
+        nhr1 = 0
+        nhr2 = 0
+        nhr3 = 0
+        age = 29
+    return npa1,npa2,npa3,nhr1,nhr2,nhr3, age
+def getlahr(batterid,year,bnpa,alreadydone, stat):
+    if year in alreadydone[0]:
+        for i in range(0,len(alreadydone)):
+            if year == alreadydone[0][i]:
+                nhr = alreadydone[1][i]
+                npa = alreadydone[2][i]
+    else:
+        if stat == '2b':
+            poststr = "SELECT doubles,ab,bb,hbp,sh,sf FROM battertemp where ab > 200 and year="+str(year)
+        if stat == 'hr':
+            poststr = "SELECT hr, ab,bb,hbp,sh,sf FROM battertemp where ab > 200 and year="+str(year)
+        if stat == 'hits':
+            poststr = "SELECT hits,ab,bb,hbp,sh,sf FROM battertemp where ab > 200 and year="+str(year)
+        if stat == '3b':
+            poststr = "SELECT triples, ab,bb,hbp,sh,sf FROM battertemp where ab > 200 and year="+str(year)
+        if stat == 'rbi':
+            poststr = "SELECT rbi,ab,bb,hbp,sh,sf FROM battertemp where ab > 200 and year="+str(year)
+        if stat == 'bb':
+            poststr = "SELECT bb, ab,bb,hbp,sh,sf FROM battertemp where ab > 200 and year="+str(year)
+        result = connection.execute(poststr)
+        theresults = result.fetchall()
+        npa = 0
+        nhr = 0
+        for theres in theresults:
+            npa = npa+theres[1]+theres[2]+theres[3]+theres[4]+theres[5]
+            nhr = nhr + theres[0]
+        alreadydone[0].append(year)
+        alreadydone[1].append(nhr)
+        alreadydone[2].append(npa)
+    ehr = nhr*1./npa
+    return [ehr, alreadydone]
+def getage(batterid,year):
+    poststr = "SELECT yob FROM batters where  id='"+batterid+"'"
+    result = connection.execute(poststr)
+    theres = result.fetchone()
+    return year-theres[0]
+def getactstat(batterid,year, stat):
+    if stat == 'hr':
+        poststr = "SELECT hr FROM battertemp where id='"+batterid+"' and year="+str(year)
+    if stat == '2b':
+        poststr = "SELECT doubles FROM battertemp where id='"+batterid+"' and year="+str(year)
+    if stat == 'hits':
+        poststr = "SELECT hits FROM battertemp where id='"+batterid+"' and year="+str(year)
+    if stat == '3b':
+        poststr = "SELECT triples FROM battertemp where id='"+batterid+"' and year="+str(year)
+    if stat == 'rbi':
+        poststr = "SELECT rbi FROM battertemp where id='"+batterid+"' and year="+str(year)
+    if stat == 'bb':
+        poststr = "SELECT bb FROM battertemp where id='"+batterid+"' and year="+str(year)
+    result = connection.execute(poststr)
+    theres = result.fetchall()
+    nhr = 0
+    for i in range(0,len(theres)):
+        nhr = nhr+theres[i][0]
+    return nhr
+def getactpa(batterid,year):
+    poststr = "SELECT ab,bb,hbp,sh,sf FROM battertemp where id='"+batterid+"' and year="+str(year)
+    result = connection.execute(poststr)
+    theres = result.fetchall()
+    npa = 0
+    for i in range(0,len(theres)):
+        npa=npa+theres[i][1]+theres[i][2]+theres[i][3]+theres[i][4]+theres[i][0]
+    return npa
+def rmse(x,y):
+    sumerr = 0
+    nerr = 0
+    for i in range(0,len(x)):
+        sumerr = sumerr+(x[i]-y[i])**2
+        nerr = nerr+1
+    themean = sumerr*1./nerr
+    return numpy.sqrt(themean)
+def createtemptable(year):
+    connection.execute("drop table battertemp")
+    poststr = "CREATE TABLE battertemp (id varchar(40), year int, stint int, team varchar(40), league varchar(40), games int, ab int, runs int, hits int, doubles int, triples int, hr int, rbi int, sb int, cs int, bb int, so int, ibb int, hbp int, sh int, sf int, gidp int, yob int, first varchar(40), last varchar(40))"
+    connection.execute(poststr)
+    connection.execute("insert into battertemp select * from batters where year>"+str(year-5)+" and year <"+str(year+1))
+def getbatterids(year):
+    result = connection.execute("select id from battertemp where ab > 400 and year="+str(year))
+    thebatters = result.fetchall()
+    batterids = []
+    for i in range(0,len(thebatters)):
+        result = connection.execute("select count(*) from battertemp where ab > 250 and year<"+str(year)+" and id='"+str(thebatters[i][0])+"' and year>"+str(year-4))
+        theresu = result.fetchone()[0]
+        if theresu > 2:
+            batterids.append(str(thebatters[i][0]))
+    return batterids
+def getprojection(batterid, year, stat,yn1,yn2,yn3,numbpa,alreadydone):
+    pa1,pa2,pa3,hr1,hr2,hr3, age = getstat(batterid,[year-1,year-2,year-3], stat, year)
+    sumhr = yn1*hr1+yn2*hr2+yn3*hr3
+    sumpa = yn1*pa1+yn2*pa2+yn3*pa3
+    #print sumhr
+    lexp1,alreadydone = getlahr(batterid,year-1,pa1,alreadydone,stat)
+    lexp2,alreadydone = getlahr(batterid,year-2,pa2,alreadydone,stat)
+    lexp3,alreadydone = getlahr(batterid,year-3,pa3,alreadydone,stat)
+    leaguehr = (yn1*lexp1*pa1+yn2*lexp2*pa2+yn3*lexp3*pa3)*numbpa*(yn1+yn2+yn3)/(sumpa)
+    #print leaguehr
+    if sumpa>0:
+        exphrpa =(sumhr+leaguehr)/(sumpa+numbpa*(yn1+yn2+yn3))
+    else:
+        exphrpa = (yn1*lexp1+yn2*lexp2+yn3*lexp3)/((yn1+yn2+yn3))
+    if age > 29:
+        ageadj = 1+(29-age)*.003
+    else:
+        ageadj = 1-(29-age)*.006
+    exphrpa = exphrpa*ageadj
+    projpa = .5*pa1+.1*pa2+200
+    return [exphrpa,projpa,alreadydone]
+    
+@interact
+def _(yn1=slider(srange(1,10,1),default=5),yn2=slider(srange(1,10,1),default=4),yn3=slider(srange(1,10,1),default=3),numbpa=slider(srange(50,150,10),default=100)):
+    print time.time()
+    stats = ['rbi', 'hits', '2b','3b','hr','bb']
+    for stat in stats:
+        proj2b = []
+        actual2b = []
+        for year in range(2010,2013):
+            allcsv = []
+            createtemptable(year) #This creates a temporary table with just the right years to speed things up.
+            batterids = getbatterids(year) # This creates a list of players with enough ABs.
+            alreadydone = [[],[],[]]
+            print time.time()
+            for batterid in batterids:
+                exphrpa,projpa, alreadydone = getprojection(batterid,year,stat,yn1,yn2,yn3,numbpa,alreadydone) #Get projected data
+                proj2b.append(exphrpa*projpa)
+                actual2b.append(getactstat(batterid,year, stat)) #Get actual data
+                allcsv.append([batterid, projpa, exphrpa*projpa])
+            print time.time()
+        print rmse(actual2b,proj2b),
+        print numpy.corrcoef(actual2b,proj2b)[0,1]
+        datalist = []
+        for i in range(0,len(proj2b)):
+            datalist.append([proj2b[i],actual2b[i]])
+        scatter_plot(datalist).show()
+    print time.time()
+    writecsv(allcsv)

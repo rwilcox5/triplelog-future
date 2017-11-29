@@ -1,0 +1,16 @@
+import numpy
+@interact
+def _(awayelo=slider(srange(0,5000,50),default=1500),homeelo=slider(srange(0,5000,50),default=1500),awayscore=slider(srange(0,50,1),default=5),homescore=slider(srange(0,50,1),default=5),k=slider(srange(0,100,1),default=25)):
+    if awayscore>homescore:
+        expaway = 1./(1+numpy.power(10,(homeelo-awayelo)*1./400))
+        awayelonew = awayelo +k*(1-expaway)
+        homeelonew = homeelo -k*(1-expaway)
+    elif awayscore<homescore:
+        expaway = 1./(1+numpy.power(10,(homeelo-awayelo)*1./400))
+        awayelonew = awayelo -k*(expaway)
+        homeelonew = homeelo +k*(expaway)
+    else:
+        awayelonew = awayelo
+        homeelonew = homeelo
+    print "Away ELO: ",awayelonew," (initially "+str(awayelo)+")"
+    print "Home ELO: ",homeelonew," (initially "+str(homeelo)+")"

@@ -1,0 +1,31 @@
+def updateelo(awayteam,hometeam,int awayscore,int homescore,teams,int k,sprarr):
+    cdef int breakg = 0
+    for ii in range(0,len(teams[0])):
+        if teams[0][ii]==awayteam:
+            awayid = ii
+            breakg = breakg+1
+        if teams[0][ii]==hometeam:
+            homeid = ii
+            breakg = breakg+1
+        if breakg == 2:
+            break
+
+    cdef int awayelo
+    cdef int homeelo
+    awayelo = int(teams[2][awayid])
+    homeelo = int(teams[2][homeid])
+    cdef double expaway
+    if awayscore>homescore:
+        expaway = 1./(1+10**((homeelo+sprarr[awayscore-homescore]-awayelo)*1./400))
+        awayelonew = awayelo +k*(1-expaway)
+        homeelonew = homeelo -k*(1-expaway)
+    elif awayscore<homescore:
+        expaway = 1./(1+10**((homeelo-sprarr[homescore-awayscore]-awayelo)*1./400))
+        awayelonew = awayelo -k*(expaway)
+        homeelonew = homeelo +k*(expaway)
+    else:
+        awayelonew = awayelo
+        homeelonew = homeelo
+    teams[2][awayid]=awayelonew
+    teams[2][homeid]=homeelonew
+    return teams
